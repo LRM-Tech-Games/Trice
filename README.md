@@ -75,7 +75,10 @@ shipped (needs a Capacitor IAP plugin + store config).
 trice/
 ├── www/
 │   ├── index.html            <- the entire game (edit this)
-│   └── privacy.html          <- privacy policy (shipped in the app + hostable)
+│   └── privacy.html          <- privacy policy, bundled in the app
+├── docs/                     <- GitHub Pages site (Settings → Pages → main /docs)
+│   ├── index.html            <-   landing page  (lrm-tech-games.github.io/Trice/)
+│   └── privacy.html          <-   public copy of www/privacy.html (sync.sh refreshes it)
 ├── portal/                   <- portal SDK adapters, folded in by pack-web.sh only
 │   ├── portal-poki.js        <-   (kept out of www/ so the native apps don't bundle them)
 │   └── portal-crazygames.js
@@ -172,10 +175,23 @@ and `AndroidManifest.xml` `android:screenOrientation="portrait"`).
 Accounts (only for the stores): Apple Developer $99/yr, Google Play $25 once. You
 can build + run on a simulator/emulator and your own device without them.
 
-**Privacy policy:** `www/privacy.html` ships inside the apps, but the store
-listings need a public URL. Host that file anywhere — e.g. GitHub Pages
-(`https://<user>.github.io/trice/privacy.html`) — and use that URL in both
-listings. Update the contact email in the file if you want a dedicated address.
+**Privacy policy / marketing URL — GitHub Pages:**
+`www/privacy.html` ships inside the apps; the store listings also need a public
+URL. The `docs/` folder is a ready Pages site — enable it once:
+
+1. github.com/LRM-Tech-Games/Trice → **Settings → Pages**
+2. Source: **Deploy from a branch** → Branch **`main`**, folder **`/docs`** → Save
+3. After a minute:
+   - landing / marketing URL — `https://lrm-tech-games.github.io/Trice/`
+   - privacy-policy URL — `https://lrm-tech-games.github.io/Trice/privacy.html`
+
+`scripts/sync.sh` copies `www/privacy.html` → `docs/privacy.html` on every run, so
+edit the policy in `www/` and it stays in sync. Fill in the real store/play links
+in `docs/index.html` once you have them.
+
+**Version tag:** when you actually submit to a store or portal,
+`git tag -a v1.0.0 -m "First store submission" && git push origin v1.0.0` so you
+can always recover exactly what shipped.
 
 **iOS** — Xcode: set your Team under *Signing & Capabilities* on the `App`
 target, bump version/build, *Product → Archive → Distribute App*, finish at

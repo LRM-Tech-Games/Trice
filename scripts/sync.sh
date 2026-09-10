@@ -9,6 +9,9 @@ if [ ! -d node_modules ]; then
   npm install
 fi
 
+# keep the GitHub Pages copy of the privacy policy in step with the shipped one
+cp -f www/privacy.html docs/privacy.html 2>/dev/null || true
+
 npx cap sync
 echo
 echo "Synced www/ -> ios/ and android/."
