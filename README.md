@@ -45,8 +45,16 @@ clearing placements. **PURE** bonus for a single-colour line, **PERFECT CLEAR**
   clear / combo ladder / perfect fanfare / achievement ding); a "one more!"
   yellow pulse on the gap when a placement brings a row/column to 5 of 6. Honors
   `prefers-reduced-motion`.
-- **First run** (`profile.totals.games === 0`) skips the mode menu and drops
-  straight into a Relaxed game.
+- **First run** (`!profile.tutorialDone`): an intro splash ("drag a block, fill a
+  row or column, quick demo — clear 2 lines"), then a **scripted guided demo** —
+  the tray holds one block at a time and the grid highlights exactly where it
+  goes; four placements fill and clear the bottom row, then the left column. On
+  the 2nd clear a "NICE!" screen, then the mode menu with **coach-mark popups**
+  cycling the three modes (`!profile.coachDone`). `skip demo` on the splash
+  bypasses it. Both flags persist so it only happens once.
+  The demo drives `place()` with `tutorial = true` (forced tray, drop gated to the
+  target cells, no scoring/achievements/jam/perfect); script is `TUT[]` near the
+  onboarding functions.
 
 ## Game-over screen
 

@@ -257,6 +257,34 @@
   #revive{background:var(--yellow); color:#000;}
   #dbl{background:var(--green); color:#000; font-size:calc(var(--u)*0.28);
     padding:calc(var(--u)*0.16) calc(var(--u)*0.42);}
+
+  /* onboarding */
+  .layer{transition:opacity .45s ease;}
+  .layer.faded{opacity:0;}
+  #intro:not(.hidden), #congrats:not(.hidden){animation:layerin .45s ease;}
+  @keyframes layerin{from{opacity:0}}
+  #intro .tag, #congrats .tag{font-size:calc(var(--u)*0.17); letter-spacing:3px; color:var(--green);}
+  #intro .skip{font-size:calc(var(--u)*0.16); color:#6a6a6a; text-decoration:underline; cursor:pointer;}
+  #intro p b{color:#fff; font-size:inherit;}
+
+  .cell.tut-target{z-index:3;}
+  .cell.tut-target::before{content:""; position:absolute; inset:0; z-index:4;
+    animation:tutpulse 1.1s ease-in-out infinite;}
+  @keyframes tutpulse{
+    0%,100%{box-shadow:inset 0 0 0 3px rgba(40,200,64,.95)}
+    50%{box-shadow:inset 0 0 0 3px rgba(40,200,64,.35), 0 0 16px rgba(40,200,64,.7)}}
+  .slot.tut-from{border-color:var(--green); animation:tutfrom 1.1s ease-in-out infinite;}
+  @keyframes tutfrom{0%,100%{box-shadow:0 0 0 0 rgba(40,200,64,0)}50%{box-shadow:0 0 14px 2px rgba(40,200,64,.55)}}
+  #hint.tut{color:var(--green); font-size:calc(var(--u)*0.2);}
+
+  #coach{position:fixed; inset:0; z-index:250;}
+  #coach .coach-ring{position:fixed; border:3px solid var(--green); border-radius:4px;
+    box-shadow:0 0 0 9999px rgba(0,0,0,.82), 0 0 24px rgba(40,200,64,.55);
+    pointer-events:none; transition:top .3s, left .3s, width .3s, height .3s;}
+  #coach .coach-say{position:fixed; left:50%; transform:translateX(-50%);
+    width:min(84vw,360px); text-align:center; color:#fff;}
+  #coach .coach-say p{font-size:calc(var(--u)*0.24); line-height:1.5; margin-bottom:calc(var(--u)*0.18);}
+  #coach .coach-say span{font-size:calc(var(--u)*0.15); color:var(--green); letter-spacing:2px;}
 </style>
 </head>
 <body>
@@ -340,6 +368,26 @@
   <button id="sheet-back">BACK</button>
 </div>
 
+<div id="intro" class="layer hidden">
+  <h1>TRICE</h1>
+  <p>Drag a block onto the grid.<br>Fill a whole <b>row</b> or <b>column</b> and it clears.</p>
+  <p class="tag">QUICK DEMO &middot; CLEAR 2 LINES</p>
+  <button id="intro-go">START</button>
+  <a id="intro-skip" class="skip">skip demo</a>
+</div>
+
+<div id="congrats" class="layer hidden">
+  <h1>NICE!</h1>
+  <p>Two lines cleared.<br>That's the whole game.</p>
+  <p class="tag">NOW PICK A MODE</p>
+  <button id="congrats-go">PLAY</button>
+</div>
+
+<div id="coach" class="hidden">
+  <div class="coach-ring"></div>
+  <div class="coach-say"><p></p><span>TAP TO CONTINUE &rsaquo;</span></div>
+</div>
+
 <script>
 /* Portal shim — no-op by default (Capacitor app / plain web). A portal adapter
    script (portal-poki.js, portal-crazygames.js) loaded BEFORE this file replaces
@@ -393,6 +441,7 @@ window.Portal = window.Portal || {
   }
   var DEF = {
     lastMode:'relaxed', muted:false, skin:'classic', theme:'midnight',
+    tutorialDone:false, coachDone:false,
     bestRelaxed:0, bestTimed:0, bestScoreAny:0, timedBestSurvive:0, bestCombo:0,
     totals:{ games:0, blocks:0, lines:0, perfects:0, pureLines:0 },
     pureColors:[], achievements:[], unlocks:[],
@@ -651,6 +700,7 @@ window.Portal = window.Portal || {
       flow, started, lastTs, lastMoveTs, startTs, pausedAccum, pauseStart,
       over, paused, busy, revived, doubled, overReason, drag, ghost, ghostGrab = [0,0];
   var hiCells = [], _ovT = 0, _ovLabel = '';
+  var tutorial = false, tutStep = 0, tutLines = 0, tutMiss = 0;
 
   function emptyBoard(){
     var b = [];
@@ -700,7 +750,8 @@ window.Portal = window.Portal || {
     trayEl.innerHTML = '';
     tray.forEach(function(p,i){
       var slot = document.createElement('div');
-      slot.className = 'slot' + (selected===i ? ' sel' : '') + (fitsAnywhere(p) ? '' : ' dead');
+      slot.className = 'slot' + (selected===i ? ' sel' : '')
+        + (tutorial ? ' tut-from' : (fitsAnywhere(p) ? '' : ' dead'));
       slot.dataset.i = i;
       var mini = document.createElement('div');
       mini.className = 'mini';
@@ -717,6 +768,7 @@ window.Portal = window.Portal || {
       trayEl.appendChild(slot);
       attachSlot(slot);
     });
+    if (tutorial) return;   // hint text is managed by tutSetup()
     $('#hint').textContent = selected != null
       ? 'TAP GRID TO PLACE  /  TAP BLOCK TO CANCEL'
       : isTimed()
@@ -814,7 +866,12 @@ window.Portal = window.Portal || {
     var end = function(e){
       if (!drag) return;
       var t = target(e.clientX, e.clientY, drag.p, drag.grab);
-      if (t && t.valid) place(drag.i, t);
+      if (tutorial){
+        if (t && t.valid && tutMatch(t.list)) place(drag.i, t);
+        else if (drag.moved) tutNudge();
+        else { selected = (selected===drag.i) ? null : drag.i; sfx('select'); renderTray(); }
+      }
+      else if (t && t.valid) place(drag.i, t);
       else if (!drag.moved){
         selected = (selected===drag.i) ? null : drag.i;
         sfx('select'); renderTray();
@@ -828,6 +885,11 @@ window.Portal = window.Portal || {
   gridEl.addEventListener('pointerdown', function(e){
     if (selected == null || paused || over || busy) return;
     var t = target(e.clientX, e.clientY, tray[selected]);
+    if (tutorial){
+      if (t && t.valid && tutMatch(t.list)) place(selected, t);
+      else tutNudge();
+      return;
+    }
     if (t && t.valid) place(selected, t);
     else { sfx('invalid'); shake('sm'); }
   });
@@ -838,10 +900,10 @@ window.Portal = window.Portal || {
     var p = tray[i];
     var placed = t.list.slice();
     placed.forEach(function(pt){ board[pt[0]][pt[1]] = p.color; });
-    tray[i] = makePiece();
+    if (tutorial) tray = []; else tray[i] = makePiece();
     selected = null;
     score += p.coords.length;
-    profile.totals.blocks += p.coords.length;
+    if (!tutorial) profile.totals.blocks += p.coords.length;
 
     if (!started){ started = true; startTs = performance.now(); }
     lastMoveTs = performance.now();
@@ -859,6 +921,7 @@ window.Portal = window.Portal || {
     for (var rr=0; rr<6; rr++){ var f=true; for (var c=0;c<6;c++) if(!board[rr][c]){ f=false; break; } if(f) fullRows.push(rr); }
     for (var cc=0; cc<6; cc++){ var f2=true; for (var r2=0;r2<6;r2++) if(!board[r2][cc]){ f2=false; break; } if(f2) fullCols.push(cc); }
     var nLines = fullRows.length + fullCols.length;
+    if (tutorial) tutLines += nLines;
 
     // "one more!" — if this placement just brought a row/column to 5 of 6, flash the gap
     if (!reduceMotion){
@@ -879,6 +942,7 @@ window.Portal = window.Portal || {
     if (nLines === 0){
       if (combo > 0){ combo = 0; renderStats(); }
       renderScore();
+      if (tutorial){ renderTray(); tutAdvance(); return; }
       postPlace();
       return;
     }
@@ -887,8 +951,10 @@ window.Portal = window.Portal || {
     combo = Math.min(MAX_MULT, combo + 1);
     maxCombo = Math.max(maxCombo, combo);
     lines += nLines;
-    profile.totals.lines += nLines;
-    profile.bestCombo = Math.max(profile.bestCombo, combo);
+    if (!tutorial){
+      profile.totals.lines += nLines;
+      profile.bestCombo = Math.max(profile.bestCombo, combo);
+    }
 
     var clearSet = {}, pureCount = 0, pureCols = [], cr, cc2;
     for (cr=0; cr<fullRows.length; cr++){
@@ -955,7 +1021,7 @@ window.Portal = window.Portal || {
 
       var emptyNow = true;
       for (var q=0;q<36;q++) if (board[q/6|0][q%6]){ emptyNow = false; break; }
-      if (emptyNow){
+      if (emptyNow && !tutorial){
         score += 2500;
         profile.totals.perfects++;
         flow = Math.min(100, flow + (isTimed() ? 40 : 25));
@@ -966,8 +1032,9 @@ window.Portal = window.Portal || {
         vibrate([40,60,40,60,80]);
         try { Portal.happyTime(); } catch(e){}
       }
-      saveProfile(); evalAch();
       busy = false;
+      if (tutorial){ renderTray(); tutAdvance(); return; }
+      saveProfile(); evalAch();
       renderTray();
       postPlace();
     }, CLEAR_MS);
@@ -1149,6 +1216,8 @@ window.Portal = window.Portal || {
     $('#flash').classList.add('hidden');
     $('#revive').classList.add('hidden');
     $('#dbl').classList.add('hidden');
+    $('#congrats').classList.add('hidden');
+    $('#coach').classList.add('hidden');
     renderBoard(); renderTray(); renderFlow(); renderScore(); renderStats();
   }
   function revive(){
@@ -1183,6 +1252,116 @@ window.Portal = window.Portal || {
     $('#daily-line').textContent = 'STREAK ' + profile.daily.streak +
       (profile.daily.bestDate === tk ? '  ·  TODAY ' + profile.daily.bestScore.toLocaleString() : '  ·  NOT PLAYED');
     $('#menu').classList.remove('hidden');
+  }
+
+  /* ---------------- first-run onboarding ---------------- */
+  function showFade(sel){
+    var el = $(sel);
+    el.classList.remove('faded');
+    el.classList.remove('hidden');
+  }
+  function hideFade(sel, cb){
+    var el = $(sel);
+    el.classList.add('faded');
+    setTimeout(function(){
+      el.classList.add('hidden'); el.classList.remove('faded');
+      if (cb) cb();
+    }, 460);
+  }
+
+  // scripted demo: fill & clear the bottom row, then the left column
+  var TUT = [
+    { kind:'h3', color:'blue',   cells:[[5,0],[5,1],[5,2]], say:'Drag the block onto the glowing squares.' },
+    { kind:'h3', color:'green',  cells:[[5,3],[5,4],[5,5]], say:'Fill the whole bottom row.' },
+    { kind:'v3', color:'yellow', cells:[[3,0],[4,0],[5,0]], say:'Nice! Columns clear the same way.' },
+    { kind:'v3', color:'red',    cells:[[0,0],[1,0],[2,0]], say:'Complete the left column.' }
+  ];
+  function tutPiece(kind, color){
+    var v = kind === 'v3';
+    return { coords: v ? [[0,0],[1,0],[2,0]] : [[0,0],[0,1],[0,2]], w: v?1:3, h: v?3:1, color: color };
+  }
+  function clearTutTargets(){
+    for (var i=0;i<36;i++) cells[i].classList.remove('tut-target');
+  }
+  function tutMatch(list){
+    if (!TUT[tutStep]) return false;
+    var want = TUT[tutStep].cells;
+    if (list.length !== want.length) return false;
+    var a = list.map(function(p){ return p[0]+','+p[1]; }).sort().join('|');
+    var b = want.map(function(p){ return p[0]+','+p[1]; }).sort().join('|');
+    return a === b;
+  }
+  function tutNudge(){
+    sfx('invalid'); shake('sm');
+    if (++tutMiss >= 2) $('#hint').textContent = 'Drop it right on the green squares.';
+  }
+  function tutSetup(){
+    var step = TUT[tutStep];
+    tray = [ tutPiece(step.kind, step.color) ];
+    selected = null;
+    renderTray();
+    clearTutTargets();
+    step.cells.forEach(function(c){ cells[c[0]*6+c[1]].classList.add('tut-target'); });
+    $('#hint').classList.add('tut');
+    $('#hint').textContent = step.say;
+  }
+  function startTutorial(){
+    tutorial = true; tutStep = 0; tutLines = 0; tutMiss = 0;
+    newGame('relaxed');
+    tutorial = true;             // newGame doesn't touch it, but be explicit
+    tutSetup();
+    try { Portal.gameplayStart(); } catch(e){}
+  }
+  function tutAdvance(){
+    tutMiss = 0;
+    clearTutTargets();
+    tutStep++;
+    if (tutLines >= 2 || tutStep >= TUT.length){ tutFinish(); return; }
+    setTimeout(tutSetup, 220);
+  }
+  function tutFinish(){
+    tutorial = false;
+    clearTutTargets();
+    $('#hint').classList.remove('tut');
+    profile.tutorialDone = true;
+    saveProfile();
+    setTimeout(function(){ showFade('#congrats'); }, 400);
+  }
+
+  var COACH = [
+    { sel:'.modebtn[data-mode="relaxed"]', text:'RELAXED — no timer. Fit blocks, clear lines, take your time.' },
+    { sel:'.modebtn[data-mode="timed"]',   text:'TIMED — a bar drains while you think. Keep placing to stay alive.' },
+    { sel:'.modebtn[data-mode="daily"]',   text:'DAILY — everyone gets the same blocks. Build a day streak.' }
+  ];
+  var coachIx = 0;
+  function runCoach(){
+    if (document.querySelector('#menu').classList.contains('hidden')) return;
+    coachIx = 0;
+    showCoachStep();                       // position the ring while still hidden
+    $('#coach').classList.remove('hidden');
+  }
+  function showCoachStep(){
+    var c = COACH[coachIx], el = c && document.querySelector(c.sel);
+    if (!el){ endCoach(); return; }
+    var r = el.getBoundingClientRect(), pad = 6, ring = $('#coach .coach-ring');
+    ring.style.top = (r.top - pad) + 'px';
+    ring.style.left = (r.left - pad) + 'px';
+    ring.style.width = (r.width + pad*2) + 'px';
+    ring.style.height = (r.height + pad*2) + 'px';
+    var say = $('#coach .coach-say');
+    say.querySelector('p').textContent = c.text;
+    if (r.bottom > window.innerHeight * 0.6){
+      say.style.top = 'auto';
+      say.style.bottom = (window.innerHeight - r.top + 14) + 'px';
+    } else {
+      say.style.bottom = 'auto';
+      say.style.top = (r.bottom + 14) + 'px';
+    }
+  }
+  function endCoach(){
+    $('#coach').classList.add('hidden');
+    profile.coachDone = true;
+    saveProfile();
   }
 
   /* ---------------- STATS / LOOKS sheets ---------------- */
@@ -1317,6 +1496,27 @@ window.Portal = window.Portal || {
   });
   $('#tomenu').addEventListener('click', showMenu);
   $('#pmenu').addEventListener('click', showMenu);
+  $('#intro-go').addEventListener('click', function(){
+    initAudio(); if (actx && actx.state === 'suspended') actx.resume();
+    hideFade('#intro', startTutorial);
+  });
+  $('#intro-skip').addEventListener('click', function(){
+    profile.tutorialDone = true; profile.coachDone = true; saveProfile();
+    tutorial = false;
+    hideFade('#intro', function(){ newGame(mode); showMenu(); });
+  });
+  $('#congrats-go').addEventListener('click', function(){
+    hideFade('#congrats', function(){
+      newGame('relaxed');
+      showMenu();
+      if (!profile.coachDone) setTimeout(runCoach, 60);
+    });
+  });
+  $('#coach').addEventListener('click', function(){
+    coachIx++;
+    if (coachIx >= COACH.length){ endCoach(); return; }
+    showCoachStep();
+  });
   $('#openstats').addEventListener('click', openStats);
   $('#openlooks').addEventListener('click', openLooks);
   $('#openprivacy').addEventListener('click', function(){ window.location.href = 'privacy.html'; });
@@ -1347,13 +1547,15 @@ window.Portal = window.Portal || {
   } catch(e){}
 
   applyLooks();
-  if (profile.totals.games === 0){
-    // brand-new player: skip the mode menu, drop straight into a Relaxed game
+  if (!profile.tutorialDone){
+    // brand-new player: intro splash -> guided 2-line demo -> menu with mode coach-marks
     newGame('relaxed');
-    try { Portal.gameplayStart(); } catch(e){}
+    tutorial = false;
+    showFade('#intro');
   } else {
     newGame(mode);
     showMenu();
+    if (!profile.coachDone) setTimeout(runCoach, 60);
   }
   try { Portal.init(); Portal.loadingDone(); } catch(e){}
 })();
