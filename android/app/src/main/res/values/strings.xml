@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Trice</string>
+    <string name="title_activity_main">Trice</string>
+    <string name="package_name">com.dentremontguitars.trice</string>
+    <string name="custom_url_scheme">com.dentremontguitars.trice</string>
+</resources>

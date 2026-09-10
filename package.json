@@ -1,0 +1,29 @@
+{
+  "name": "trice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trice — a blocky grid puzzle: fit three-square pieces, clear rows and columns. Cross-platform via Capacitor.",
+  "scripts": {
+    "postinstall": "node scripts/fix-capacitor-spm.mjs",
+    "sync": "cap sync",
+    "copy": "cap copy",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android",
+    "add:ios": "cap add ios --packagemanager SPM",
+    "add:android": "cap add android",
+    "run:ios": "cap run ios",
+    "run:android": "cap run android",
+    "assets": "capacitor-assets generate && rm -rf icons www/icons www/manifest.json",
+    "pack:web": "scripts/pack-web.sh",
+    "serve": "npx --yes serve www -l 5173"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.0.0"
+  }
+}

@@ -1,0 +1,16 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- transparent; L-tromino kept inside the adaptive-icon safe zone -->
+  <g>
+    <rect x="303" y="303" width="209" height="209" fill="#ff4136"/>
+    <rect x="303" y="303" width="209" height="20" fill="#ffffff" opacity="0.30"/>
+    <rect x="303" y="492" width="209" height="20" fill="#000000" opacity="0.32"/>
+
+    <rect x="303" y="512" width="209" height="209" fill="#0a84ff"/>
+    <rect x="303" y="512" width="209" height="20" fill="#ffffff" opacity="0.30"/>
+    <rect x="303" y="701" width="209" height="20" fill="#000000" opacity="0.32"/>
+
+    <rect x="512" y="512" width="209" height="209" fill="#ffd60a"/>
+    <rect x="512" y="512" width="209" height="20" fill="#ffffff" opacity="0.30"/>
+    <rect x="512" y="701" width="209" height="20" fill="#000000" opacity="0.32"/>
+  </g>
+</svg>

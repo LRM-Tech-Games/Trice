@@ -1,0 +1,23 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#050505"/>
+  <!-- faint grid -->
+  <g stroke="#141414" stroke-width="2">
+    <path d="M171 0V1024 M341 0V1024 M512 0V1024 M683 0V1024 M853 0V1024"/>
+    <path d="M0 171H1024 M0 341H1024 M0 512H1024 M0 683H1024 M0 853H1024"/>
+  </g>
+  <!-- L-tromino: three squares that touch on a side -->
+  <g>
+    <!-- top-left · red -->
+    <rect x="212" y="212" width="300" height="300" fill="#ff4136"/>
+    <rect x="212" y="212" width="300" height="28" fill="#ffffff" opacity="0.30"/>
+    <rect x="212" y="484" width="300" height="28" fill="#000000" opacity="0.32"/>
+    <!-- bottom-left · blue -->
+    <rect x="212" y="512" width="300" height="300" fill="#0a84ff"/>
+    <rect x="212" y="512" width="300" height="28" fill="#ffffff" opacity="0.30"/>
+    <rect x="212" y="784" width="300" height="28" fill="#000000" opacity="0.32"/>
+    <!-- bottom-right · yellow -->
+    <rect x="512" y="512" width="300" height="300" fill="#ffd60a"/>
+    <rect x="512" y="512" width="300" height="28" fill="#ffffff" opacity="0.30"/>
+    <rect x="512" y="784" width="300" height="28" fill="#000000" opacity="0.32"/>
+  </g>
+</svg>
