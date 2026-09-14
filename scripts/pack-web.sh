@@ -44,5 +44,8 @@ case "$PORTAL" in
     echo "Unknown portal '$PORTAL' — use: poki | crazygames | none" >&2; exit 1;;
 esac
 
-( cd "$OUT" && zip -qr "../trice-web.zip" . )
-echo "Built  $OUT/  and  trice-web.zip"
+ZIP="trice-web.zip"
+[ "$PORTAL" != "none" ] && ZIP="trice-$PORTAL.zip"
+rm -f "$ZIP"
+( cd "$OUT" && zip -qr "../$ZIP" . )
+echo "Built  $OUT/  and  $ZIP"

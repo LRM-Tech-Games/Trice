@@ -31,6 +31,8 @@ android/captures/
 # web / portal builds (regenerate with scripts/pack-web.sh)
 dist-web/
 trice-web.zip
+trice-poki.zip
+trice-crazygames.zip
 
 # capacitor-assets PWA leftovers (we don't ship a PWA)
 /icons/

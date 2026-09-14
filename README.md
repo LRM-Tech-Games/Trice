@@ -209,6 +209,60 @@ appstoreconnect.apple.com.
 Bundle*. Create a keystore and **back it up** (losing it = can't ship updates).
 Upload the `.aab` at play.google.com/console.
 
+### CrazyGames submission
+
+```bash
+./scripts/pack-web.sh crazygames   # -> dist-web/ + trice-crazygames.zip
+```
+
+Upload `trice-crazygames.zip` as-is at [developer.crazygames.com](https://developer.crazygames.com/submit) —
+3 files, ~80&nbsp;KB uncompressed (limits are 250&nbsp;MB / 1500 files total, 50&nbsp;MB initial
+download). `portal/portal-crazygames.js` is already wired in ahead of the game
+script and covers the full SDK: `gameplayStart/Stop` (fires the moment the
+intro-splash START is tapped — the onboarding tutorial itself counts as
+gameplay, satisfying their "1 click to gameplay" rule), `commercialBreak` on
+**PLAY AGAIN** only (never on MENU — CrazyGames disallows ads on navigation),
+`rewardedBreak` backing **CONTINUE** and **DOUBLE SCORE** (never rewards on
+`adError`), and `happyTime()` on a Perfect Clear. Sitelocking is automatic once
+the SDK is integrated — no extra code needed.
+
+**Cover images** — `./assets/covers/` (regenerate with `node scripts/make-covers.mjs`,
+composed from a real captured board state, no design tool needed):
+
+| File | Size | Use |
+|---|---|---|
+| `cover-landscape-1920x1080.png` | 1920&times;1080 | required |
+| `cover-portrait-800x1200.png` | 800&times;1200 | required |
+| `cover-square-800x800.png` | 800&times;800 | required |
+
+**Still needed for submission (not automatable here):**
+- a 15–20s gameplay preview video, 1080p, both landscape (16:9) and portrait
+  (2:3) — ask to have this built (a scripted Playwright capture) when you're
+  ready, it's a separate step.
+- the actual form fields on the developer portal — draft copy:
+  - **Title:** Trice
+  - **Short description:** Fit three-square blocks onto a 6&times;6 grid, clear
+    rows and columns, and chase the combo. Play Relaxed, race the clock in
+    Timed, or take on the daily challenge.
+  - **Long description:** Trice is a blocky grid-puzzle game — drag
+    three-square pieces onto a 6&times;6 board, fill a full row or column to
+    clear it, and keep the board from filling up. Three ways to play: Relaxed
+    (no clock, take your time), Timed (a FLOW bar drains while you think —
+    keep placing to stay alive), and Daily Challenge (the same blocks for
+    everyone, once a day — build a streak). Chain clears for combo
+    multipliers, clear a line in a single color for a PURE bonus, empty the
+    whole board for a PERFECT CLEAR. 17 achievements, 5 block skins, 4 grid
+    themes to unlock. No installs, no accounts — just one more round.
+  - **Controls:** Drag a block from the tray onto the grid with your mouse or
+    finger. Or tap a block to select it, then tap the grid to place it.
+  - **Category:** Puzzle. **Tags:** block puzzle, grid, casual, relaxing,
+    brain, combo, daily challenge.
+  - **Orientation:** Portrait (the board centers and letterboxes cleanly in a
+    landscape iframe too — worth a quick look in their preview before
+    finalizing).
+  - Content is original, no violence/gambling/chat/UGC — comfortably under the
+    PEGI 12 ceiling.
+
 ## Configuration — `capacitor.config.json`
 
 | Field | Value |
