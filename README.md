@@ -250,6 +250,13 @@ of `package.json` so it doesn't weigh down every normal `npm install`.
 | `trice-preview-landscape-1920x1080.mp4` | 1920&times;1080, 19.5s | required |
 | `trice-preview-portrait-1080x1620.mp4` | 1080&times;1620, 19.5s | required |
 
+**Social reel** — `./assets/social/trice-reel-1080x1920.mp4` (regenerate with
+`node scripts/make-social-reel.mjs`, same setup as the preview video above).
+True 9:16 for TikTok / Reels / Shorts, not CrazyGames' 2:3 — same scripted
+playthrough technique, with a small TRICE watermark burned into the top-left
+corner since a reel gets shared standalone, off any store page. Both video
+scripts now share the actual recording logic from `scripts/lib/showcase-recorder.mjs`.
+
 **Still needed for submission (not automatable here):**
 - the actual form fields on the developer portal — draft copy:
   - **Title:** Trice
