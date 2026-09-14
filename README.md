@@ -235,10 +235,22 @@ composed from a real captured board state, no design tool needed):
 | `cover-portrait-800x1200.png` | 800&times;1200 | required |
 | `cover-square-800x800.png` | 800&times;800 | required |
 
+**Preview video** — `./assets/preview/` (regenerate with
+`node scripts/make-preview-video.mjs`). Not a screen recording: a scripted ~19.5s
+playthrough drives the real game through synthetic pointer events — same
+technique used throughout this project's own testing — with a small greedy
+solver picking moves that favor clears, so every combo/PURE/PERFECT-CLEAR/
+achievement on screen actually happened. Needs a one-time, deliberately
+project-external setup (`npm i -D playwright ffmpeg-static && npx playwright
+install chromium`, ~280MB) — see the comment at the top of the script; kept out
+of `package.json` so it doesn't weigh down every normal `npm install`.
+
+| File | Size | Use |
+|---|---|---|
+| `trice-preview-landscape-1920x1080.mp4` | 1920&times;1080, 19.5s | required |
+| `trice-preview-portrait-1080x1620.mp4` | 1080&times;1620, 19.5s | required |
+
 **Still needed for submission (not automatable here):**
-- a 15–20s gameplay preview video, 1080p, both landscape (16:9) and portrait
-  (2:3) — ask to have this built (a scripted Playwright capture) when you're
-  ready, it's a separate step.
 - the actual form fields on the developer portal — draft copy:
   - **Title:** Trice
   - **Short description:** Fit three-square blocks onto a 6&times;6 grid, clear

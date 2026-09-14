@@ -33,6 +33,7 @@ dist-web/
 trice-web.zip
 trice-poki.zip
 trice-crazygames.zip
+.preview-tmp/
 
 # capacitor-assets PWA leftovers (we don't ship a PWA)
 /icons/
