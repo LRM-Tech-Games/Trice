@@ -401,7 +401,9 @@ window.Portal = window.Portal || {
   commercialBreak: function(cb){ if (cb) cb(); },          // interstitial between games
   rewardedBreak: function(cb){ if (cb) cb(false); },        // cb(true) = ad watched
   rewardsAvailable: function(){ return false; },            // show "CONTINUE" button?
-  happyTime: function(){}
+  happyTime: function(){},
+  audioMuted: function(){ return false; },                  // platform-level forced mute?
+  onMuteChange: function(cb){}                               // cb(bool) when that changes
 };
 </script>
 
@@ -569,7 +571,8 @@ window.Portal = window.Portal || {
   var rng = Math.random;
 
   /* ---------------- audio (synth, no assets) ---------------- */
-  var actx, master;
+  var actx, master, sdkMuted = false;
+  function muted(){ return profile.muted || sdkMuted; }
   function initAudio(){
     if (actx) return;
     try {
@@ -589,7 +592,7 @@ window.Portal = window.Portal || {
     } catch(e){}
   }
   function blipAt(freq, dur, type, vol, delay){
-    if (!actx || profile.muted || actx.state === 'closed') return;
+    if (!actx || muted() || actx.state === 'closed') return;
     try {
       var t = actx.currentTime + (delay || 0);
       var o = actx.createOscillator(), g = actx.createGain();
@@ -602,7 +605,7 @@ window.Portal = window.Portal || {
     } catch(e){}
   }
   function slideAt(f1, f2, dur, type, vol, delay){
-    if (!actx || profile.muted || actx.state === 'closed') return;
+    if (!actx || muted() || actx.state === 'closed') return;
     try {
       var t = actx.currentTime + (delay || 0);
       var o = actx.createOscillator(), g = actx.createGain();
@@ -617,7 +620,7 @@ window.Portal = window.Portal || {
     } catch(e){}
   }
   function noiseAt(dur, freq, q, vol, delay){
-    if (!actx || profile.muted || actx.state === 'closed') return;
+    if (!actx || muted() || actx.state === 'closed') return;
     try {
       var t = actx.currentTime + (delay || 0);
       var n = Math.floor(actx.sampleRate * dur);
@@ -638,7 +641,7 @@ window.Portal = window.Portal || {
   var PENT = [0,2,4,7,9,12,14,16,19,21,24,26];
   function deg(i){ return BASE * Math.pow(2, PENT[Math.max(0, Math.min(PENT.length-1, i))] / 12); }
   function sfx(name, n){
-    if (!actx || profile.muted) return;
+    if (!actx || muted()) return;
     n = n || 1;
     if (name === 'place'){ blipAt(180, 0.05, 'square', 0.12); blipAt(120, 0.06, 'square', 0.09, 0.02); }
     else if (name === 'select') blipAt(deg(3), 0.05, 'triangle', 0.12);
@@ -1529,12 +1532,17 @@ window.Portal = window.Portal || {
       try { Portal.gameplayStart(); } catch(e){}
     });
   });
+  function renderMute(){ $('#mute').classList.toggle('off', muted()); }
   $('#mute').addEventListener('click', function(){
-    profile.muted = !profile.muted;
+    profile.muted = !profile.muted;   // the SDK's own forced mute (sdkMuted) always wins regardless
     saveProfile();
-    $('#mute').classList.toggle('off', profile.muted);
+    renderMute();
   });
-  $('#mute').classList.toggle('off', profile.muted);
+  renderMute();
+  try {
+    sdkMuted = !!Portal.audioMuted();
+    Portal.onMuteChange(function(m){ sdkMuted = !!m; renderMute(); });
+  } catch(e){}
 
   document.addEventListener('visibilitychange', function(){
     if (document.hidden && started && !over) setPaused(true);

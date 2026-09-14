@@ -32,6 +32,8 @@
       catch(e){ if (cb) cb(false); }
     },
     rewardsAvailable: function(){ return ready; },
-    happyTime: function(){ whenReady(function(){ try { PokiSDK.happyTime(0.8); } catch(e){} }); }
+    happyTime: function(){ whenReady(function(){ try { PokiSDK.happyTime(0.8); } catch(e){} }); },
+    audioMuted: function(){ return false; },   // Poki SDK has no equivalent platform-mute signal
+    onMuteChange: function(cb){}
   };
 })();
