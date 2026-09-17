@@ -180,19 +180,25 @@
 
   #menu{gap:calc(var(--u)*0.3); z-index:110;}
   #menu h1{font-size:calc(var(--u)*0.95);}
-  #menu .tag{font-size:calc(var(--u)*0.18); color:#8a8a8a; letter-spacing:2px;}
-  #menu .modes{display:flex; flex-direction:column; gap:var(--gap); width:min(86vw,380px);}
-  #menu .modebtn{display:flex; flex-direction:column; align-items:flex-start;
+  #menu .tag, #relicpick .tag{font-size:calc(var(--u)*0.18); color:#8a8a8a; letter-spacing:2px;}
+  #menu .modes, #relicpick .modes{display:flex; flex-direction:column; gap:var(--gap); width:min(86vw,380px);}
+  #menu .modebtn, #relicpick .modebtn{display:flex; flex-direction:column; align-items:flex-start;
     gap:calc(var(--u)*0.05); width:100%; cursor:pointer;
     padding:calc(var(--u)*0.22) calc(var(--u)*0.32);
     border:3px solid var(--line); color:var(--ink);
-    font-family:inherit; text-align:left; letter-spacing:normal;}
+    font-family:inherit; text-align:left; letter-spacing:normal; background:var(--panel);}
   #menu .modebtn[data-mode="relaxed"]{background:#0e2413; border-color:var(--green);}
   #menu .modebtn[data-mode="timed"]{background:#241d07; border-color:var(--yellow);}
   #menu .modebtn[data-mode="daily"]{background:#0a1a24; border-color:var(--blue);}
-  #menu .modebtn b{font-size:calc(var(--u)*0.4); font-weight:800; letter-spacing:2px; color:#fff;}
-  #menu .modebtn span{font-size:calc(var(--u)*0.175); color:#c4c4c4; letter-spacing:.3px;}
+  #menu .modebtn[data-mode="run"]{background:#240a0a; border-color:var(--red);}
+  #menu .modebtn b, #relicpick .modebtn b{font-size:calc(var(--u)*0.4); font-weight:800; letter-spacing:2px; color:#fff;}
+  #menu .modebtn span, #relicpick .modebtn span{font-size:calc(var(--u)*0.175); color:#c4c4c4; letter-spacing:.3px;}
   #menu .modebtn small{font-size:calc(var(--u)*0.155); color:#9a9a9a; letter-spacing:1px;}
+  #relicpick .skip{font-size:calc(var(--u)*0.16); color:#6a6a6a; text-decoration:underline; cursor:pointer;}
+
+  #relicbar{height:calc(var(--u)*0.26); gap:calc(var(--gap)/1.5);}
+  .relic-chip{width:calc(var(--u)*0.26); background:var(--rc); border:2px solid #000; flex:none;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.25);}
 
   .layer.sheet{justify-content:flex-start; gap:calc(var(--u)*0.26); padding:calc(var(--u)*0.5) 5vw;
     z-index:120; background:var(--bg);}
@@ -300,6 +306,7 @@
     <div id="lines">LINES 0</div>
     <div id="combo">COMBO &#215;1</div>
   </div>
+  <div id="relicbar" class="row hidden"></div>
   <div id="grid-wrap">
     <div id="grid"></div>
     <div id="fx"></div>
@@ -351,6 +358,11 @@
       <span>The same blocks for everyone today, on the FLOW timer. Build a day streak.</span>
       <small id="daily-line">STREAK 0</small>
     </button>
+    <button class="modebtn" data-mode="run">
+      <b>RUN</b>
+      <span>Clear stages, pick a relic between each. One jam and it's over.</span>
+      <small>BEST 0</small>
+    </button>
   </div>
   <div class="btnrow">
     <button id="openstats" class="minor">STATS</button>
@@ -387,6 +399,13 @@
 <div id="coach" class="hidden">
   <div class="coach-ring"></div>
   <div class="coach-say"><p></p><span>TAP TO CONTINUE &rsaquo;</span></div>
+</div>
+
+<div id="relicpick" class="layer hidden">
+  <h1>STAGE CLEARED</h1>
+  <div class="tag">PICK A RELIC</div>
+  <div class="modes" id="relic-choices"></div>
+  <a id="relic-reroll" class="skip hidden">watch an ad for another option &#9654;</a>
 </div>
 
 <script>
@@ -445,7 +464,8 @@ window.Portal = window.Portal || {
   var DEF = {
     lastMode:'relaxed', muted:false, skin:'classic', theme:'midnight',
     tutorialDone:false, coachDone:false,
-    bestRelaxed:0, bestTimed:0, bestScoreAny:0, timedBestSurvive:0, bestCombo:0,
+    bestRelaxed:0, bestTimed:0, bestRun:0, bestScoreAny:0, timedBestSurvive:0, bestCombo:0,
+    runBestStage:0, runAllRelicsOnce:false,
     totals:{ games:0, blocks:0, lines:0, perfects:0, pureLines:0 },
     pureColors:[], achievements:[], unlocks:[],
     daily:{ lastDate:'', streak:0, longest:0, bestDate:'', bestScore:0 }
@@ -517,7 +537,9 @@ window.Portal = window.Portal || {
     { id:'games25',    name:'REGULAR',       desc:'Play 25 games', reward:'rounded',    test:function(){ return profile.totals.games >= 25; } },
     { id:'daily3',     name:'HABIT',         desc:'Reach a 3-day daily streak',         test:function(){ return profile.daily.longest >= 3; } },
     { id:'daily7',     name:'DEVOTED',       desc:'Reach a 7-day daily streak',         test:function(){ return profile.daily.longest >= 7; } },
-    { id:'games100',   name:'DEDICATED',     desc:'Play 100 games',                     test:function(){ return profile.totals.games >= 100; } }
+    { id:'games100',   name:'DEDICATED',     desc:'Play 100 games',                     test:function(){ return profile.totals.games >= 100; } },
+    { id:'run_stage5', name:'DEEP RUN',      desc:'Reach stage 5 in a Run',              test:function(){ return (profile.runBestStage||0) >= 5; } },
+    { id:'run_allrelics', name:'RELIC HOARDER', desc:'Collect every relic in one Run',   test:function(){ return !!profile.runAllRelicsOnce; } }
   ];
   function evalAch(){
     var newly = [];
@@ -545,6 +567,91 @@ window.Portal = window.Portal || {
     sfx('ach'); vibrate(35);
     setTimeout(function(){ d.classList.add('out'); }, 2300);
     setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 2800);
+  }
+
+  /* ---------------- RUN mode: relics ----------------
+     Each relic is data, not a branch in the core loop: it plugs into one of a
+     small set of hook points (pieceShape / scoreGain / flowGain / comboReset).
+     The core game only ever asks "does anything active want to change this?" —
+     it never knows how many relics exist or what they do. Outside mode==='run'
+     these hooks are never consulted, so every other mode is unaffected. */
+  var RELICS = [
+    { id:'trominoes', name:'TROMINO FOCUS', color:'red',
+      desc:'Every piece this run is a 3-block tromino.',
+      hooks:{ pieceShape:function(){ return rnd(S3); } } },
+    { id:'goldrush', name:'GOLD RUSH', color:'yellow',
+      desc:'Any clear that touches a yellow block scores ×1.5.',
+      hooks:{ scoreGain:function(gain, ctx){ return ctx.colors.yellow ? gain * 1.5 : gain; } } },
+    { id:'secondwind', name:'SECOND WIND', color:'green',
+      desc:'Clearing lines restores extra HEALTH.',
+      hooks:{ flowGain:function(f){ return f + 6; } } },
+    { id:'chainkeeper', name:'CHAIN KEEPER', color:'blue',
+      desc:'Your combo never resets — it only grows.',
+      hooks:{ comboReset:function(){ return false; } } }
+  ];
+  function findRelic(id){
+    for (var i=0;i<RELICS.length;i++) if (RELICS[i].id === id) return RELICS[i];
+    return null;
+  }
+  function relicHook(name){
+    var out = [];
+    for (var i=0;i<runRelics.length;i++){
+      var r = findRelic(runRelics[i]);
+      if (r && r.hooks && r.hooks[name]) out.push(r.hooks[name]);
+    }
+    return out;
+  }
+  function availableRelics(){
+    return RELICS.filter(function(r){ return runRelics.indexOf(r.id) < 0; });
+  }
+  function drawRelicOffer(){
+    var pool = availableRelics().slice(), offer = [];
+    while (offer.length < Math.min(3, pool.length)){
+      offer.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+    }
+    runPickOffer = offer;
+  }
+  function renderRelicPick(){
+    var host = $('#relic-choices');
+    host.innerHTML = '';
+    runPickOffer.forEach(function(r){
+      var b = document.createElement('button');
+      b.className = 'modebtn relicbtn';
+      b.style.borderColor = 'var(--' + r.color + ')';
+      b.innerHTML = '<b>' + r.name + '</b><span>' + r.desc + '</span>';
+      b.addEventListener('click', function(){ applyRelicPick(r.id); });
+      host.appendChild(b);
+    });
+    $('#relic-reroll').classList.toggle('hidden', !(rewardsOn() && availableRelics().length > runPickOffer.length));
+  }
+  function offerRelicPick(){
+    drawRelicOffer();
+    if (!runPickOffer.length){
+      flash('STAGE ' + runStage, 'ALL RELICS COLLECTED');
+      postPlace();
+      return;
+    }
+    renderRelicPick();
+    paused = true;
+    $('#relicpick').classList.remove('hidden');
+  }
+  function applyRelicPick(id){
+    var r = findRelic(id);
+    runRelics.push(id);
+    $('#relicpick').classList.add('hidden');
+    paused = false;
+    renderStats();
+    flash('STAGE ' + runStage, (r ? r.name + ' ACQUIRED' : ''));
+    sfx('ach');
+    postPlace();
+  }
+  function checkRunAdvance(){
+    if (lines - runStageStart < runLinesNeed) return false;
+    runStage++;
+    runStageStart = lines;
+    runLinesNeed = Math.min(4 + runStage, 10);
+    offerRelicPick();
+    return true;
   }
 
   /* ---------------- seeded RNG (daily) ---------------- */
@@ -668,8 +775,15 @@ window.Portal = window.Portal || {
   /* ---------------- pieces ---------------- */
   function rnd(a){ return a[Math.floor(rng() * a.length)]; }
   function makePiece(){
-    var t = rng() * 14;                               // 9:4:1 -> 3-tile : 2-tile : 1-tile
-    var shape = t < 1 ? rnd(S1) : t < 5 ? rnd(S2) : rnd(S3);
+    var shape = null;
+    if (mode === 'run'){
+      var shapeFns = relicHook('pieceShape');
+      if (shapeFns.length) shape = shapeFns[0]();
+    }
+    if (!shape){
+      var t = rng() * 14;                             // 9:4:1 -> 3-tile : 2-tile : 1-tile
+      shape = t < 1 ? rnd(S1) : t < 5 ? rnd(S2) : rnd(S3);
+    }
     var coords = shape.map(function(c){ return c.slice(); });
     coords.sort(function(a,b){ return a[0]-b[0] || a[1]-b[1]; });
     var h = 0, w = 0;
@@ -705,6 +819,7 @@ window.Portal = window.Portal || {
       over, paused, busy, revived, doubled, overReason, drag, ghost, ghostGrab = [0,0];
   var hiCells = [], _ovT = 0, _ovLabel = '';
   var tutorial = false, tutStep = 0, tutLines = 0, tutMiss = 0;
+  var runStage = 1, runStageStart = 0, runLinesNeed = 5, runRelics = [], runPickOffer = [];
 
   function emptyBoard(){
     var b = [];
@@ -745,10 +860,31 @@ window.Portal = window.Portal || {
     $('#score small').textContent = 'BEST ' + Math.max(best, score).toLocaleString();
   }
   function renderStats(){
-    $('#lines').textContent = 'LINES ' + lines;
+    if (mode === 'run'){
+      var prog = Math.min(runLinesNeed, lines - runStageStart);
+      $('#lines').textContent = 'STAGE ' + runStage + ' · ' + prog + '/' + runLinesNeed;
+    } else {
+      $('#lines').textContent = 'LINES ' + lines;
+    }
     var cEl = $('#combo');
     cEl.textContent = 'COMBO ×' + Math.max(1, combo);
     cEl.classList.toggle('hot', combo >= 2);
+    renderRelicBar();
+  }
+  function renderRelicBar(){
+    var bar = $('#relicbar');
+    if (mode !== 'run' || !runRelics.length){ bar.classList.add('hidden'); return; }
+    bar.classList.remove('hidden');
+    bar.innerHTML = '';
+    runRelics.forEach(function(id){
+      var r = findRelic(id);
+      if (!r) return;
+      var chip = document.createElement('div');
+      chip.className = 'relic-chip';
+      chip.style.setProperty('--rc', 'var(--' + r.color + ')');
+      chip.title = r.name + ' — ' + r.desc;
+      bar.appendChild(chip);
+    });
   }
   function renderTray(){
     trayEl.innerHTML = '';
@@ -944,7 +1080,9 @@ window.Portal = window.Portal || {
     }
 
     if (nLines === 0){
-      if (combo > 0){ combo = 0; renderStats(); }
+      var keepCombo = mode === 'run' && combo > 0 &&
+        relicHook('comboReset').some(function(fn){ return fn() === false; });
+      if (combo > 0 && !keepCombo){ combo = 0; renderStats(); }
       renderScore();
       if (tutorial){ renderTray(); tutAdvance(); return; }
       postPlace();
@@ -976,14 +1114,23 @@ window.Portal = window.Portal || {
       pureCols.forEach(function(c){ if (profile.pureColors.indexOf(c) < 0) profile.pureColors.push(c); });
     }
 
+    var keys = Object.keys(clearSet);
+
     var base = LINE_SCORE[Math.min(nLines, 6)] || (2100 + (nLines-6)*700);
     var gain = Math.round((base + pureCount*120) * combo);
+    if (mode === 'run'){
+      var clearedColors = {};
+      keys.forEach(function(key){ var idx = +key, c = board[idx/6|0][idx%6]; if (c) clearedColors[c] = true; });
+      relicHook('scoreGain').forEach(function(fn){
+        gain = Math.round(fn(gain, { colors:clearedColors, nLines:nLines, pureCount:pureCount }));
+      });
+    }
     score += gain;
     flow = Math.min(100, flow + (isTimed()
       ? nLines*10 + Math.max(0, combo-1)*4
       : nLines + (nLines >= 4 ? 8 : 0)));
+    if (mode === 'run') relicHook('flowGain').forEach(function(fn){ flow = Math.min(100, fn(flow)); });
 
-    var keys = Object.keys(clearSet);
     keys.forEach(function(key){
       var idx = +key, el = cells[idx], rr = idx/6|0, cc = idx%6;
       el.classList.add('clearing');
@@ -1040,6 +1187,7 @@ window.Portal = window.Portal || {
       if (tutorial){ renderTray(); tutAdvance(); return; }
       saveProfile(); evalAch();
       renderTray();
+      if (mode === 'run' && checkRunAdvance()) return;
       postPlace();
     }, CLEAR_MS);
   }
@@ -1151,12 +1299,14 @@ window.Portal = window.Portal || {
       _ovLabel + '<br>SCORE <b>' + score.toLocaleString() + '</b><br>' +
       'BEST ' + best.toLocaleString() + '  ·  ' + lines + ' LINES<br>' +
       'MAX COMBO ×' + Math.max(1, maxCombo) + '  ·  ' + fmtTime(_ovT) +
-      (mode === 'daily' ? '<br>DAY STREAK ' + profile.daily.streak : '');
+      (mode === 'daily' ? '<br>DAY STREAK ' + profile.daily.streak : '') +
+      (mode === 'run' ? '<br>STAGE ' + runStage + '  ·  ' + runRelics.length + ' RELIC' + (runRelics.length===1?'':'S') : '');
   }
   function commitBest(){
     profile.bestScoreAny = Math.max(profile.bestScoreAny, score);
     if (mode === 'relaxed'){ profile.bestRelaxed = Math.max(profile.bestRelaxed, score); best = profile.bestRelaxed; }
     else if (mode === 'timed'){ profile.bestTimed = Math.max(profile.bestTimed, score); best = profile.bestTimed; }
+    else if (mode === 'run'){ profile.bestRun = Math.max(profile.bestRun, score); best = profile.bestRun; }
     else { profile.daily.bestScore = Math.max(profile.daily.bestScore, score); best = profile.daily.bestScore; }
   }
   function rewardsOn(){ try { return !!Portal.rewardsAvailable(); } catch(e){ return false; } }
@@ -1174,6 +1324,11 @@ window.Portal = window.Portal || {
     if (isTimed()) profile.timedBestSurvive = Math.max(profile.timedBestSurvive, t);
     if (mode === 'relaxed') _ovLabel = 'RELAXED';
     else if (mode === 'timed') _ovLabel = 'TIMED';
+    else if (mode === 'run'){
+      _ovLabel = 'RUN';
+      profile.runBestStage = Math.max(profile.runBestStage || 0, runStage);
+      if (runRelics.length >= RELICS.length) profile.runAllRelicsOnce = true;
+    }
     else {
       _ovLabel = 'DAILY CHALLENGE';
       var tk = dayKey(0);
@@ -1200,11 +1355,14 @@ window.Portal = window.Portal || {
     rng = (mode === 'daily') ? mulberry32(xmur3('trice-' + dayKey(0))()) : Math.random;
     best = mode === 'relaxed' ? profile.bestRelaxed
          : mode === 'timed'   ? profile.bestTimed
+         : mode === 'run'     ? profile.bestRun
          : (profile.daily.bestDate === dayKey(0) ? profile.daily.bestScore : 0);
     over = false; paused = false; busy = false; revived = false; doubled = false; overReason = '';
     flow = 100; started = false; pausedAccum = 0;
     lastTs = performance.now(); lastMoveTs = lastTs; startTs = lastTs;
     score = 0; lines = 0; combo = 0; maxCombo = 0;
+    runStage = 1; runStageStart = 0; runLinesNeed = 5; runRelics = []; runPickOffer = [];
+    $('#relicpick').classList.add('hidden');
     board = emptyBoard();
     tray = [makePiece(), makePiece(), makePiece(), makePiece()];
     selected = null;
@@ -1251,6 +1409,7 @@ window.Portal = window.Portal || {
       var m = b.dataset.mode;
       if (m === 'relaxed') b.querySelector('small').textContent = 'BEST ' + profile.bestRelaxed.toLocaleString();
       else if (m === 'timed') b.querySelector('small').textContent = 'BEST ' + profile.bestTimed.toLocaleString();
+      else if (m === 'run') b.querySelector('small').textContent = 'BEST ' + profile.bestRun.toLocaleString();
     });
     var tk = dayKey(0);
     $('#daily-line').textContent = 'STREAK ' + profile.daily.streak +
@@ -1335,7 +1494,8 @@ window.Portal = window.Portal || {
   var COACH = [
     { sel:'.modebtn[data-mode="relaxed"]', text:'RELAXED — no timer. Fit blocks, clear lines, take your time.' },
     { sel:'.modebtn[data-mode="timed"]',   text:'TIMED — a bar drains while you think. Keep placing to stay alive.' },
-    { sel:'.modebtn[data-mode="daily"]',   text:'DAILY — everyone gets the same blocks. Build a day streak.' }
+    { sel:'.modebtn[data-mode="daily"]',   text:'DAILY — everyone gets the same blocks. Build a day streak.' },
+    { sel:'.modebtn[data-mode="run"]',     text:'RUN — clear stages, pick a relic between each. One jam ends the run.' }
   ];
   var coachIx = 0;
   function runCoach(){
@@ -1382,6 +1542,8 @@ window.Portal = window.Portal || {
       ['BEST COMBO', '×' + profile.bestCombo],
       ['BEST · RELAXED', L(profile.bestRelaxed)],
       ['BEST · TIMED', L(profile.bestTimed)],
+      ['BEST · RUN', L(profile.bestRun)],
+      ['DEEPEST RUN', 'STAGE ' + (profile.runBestStage||0)],
       ['DAILY STREAK', profile.daily.streak + '  (best ' + profile.daily.longest + ')']
     ];
     var html = '<h3>NUMBERS</h3>';
@@ -1520,6 +1682,15 @@ window.Portal = window.Portal || {
     coachIx++;
     if (coachIx >= COACH.length){ endCoach(); return; }
     showCoachStep();
+  });
+  $('#relic-reroll').addEventListener('click', function(){
+    try {
+      Portal.rewardedBreak(function(ok){
+        if (!ok) return;
+        drawRelicOffer();
+        renderRelicPick();
+      });
+    } catch(e){}
   });
   $('#openstats').addEventListener('click', openStats);
   $('#openlooks').addEventListener('click', openLooks);

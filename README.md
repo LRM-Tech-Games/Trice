@@ -25,8 +25,13 @@ game-over screens; last mode is remembered, best score tracked per mode):
 - **DAILY CHALLENGE** — Timed rules, but the piece sequence is seeded from the
   date, so it's identical for everyone that day. Finishing a run advances your
   **day streak** (a missed day resets it); best-of-day score is kept.
+- **RUN** — Relaxed's HEALTH rules, but the board is split into stages: clear a
+  target number of lines (5, then 6, 7… capping at 10) to advance, and pick one
+  of 2–3 **relics** each time you do. Relics are permanent, run-scoped modifiers
+  (e.g. "every piece is a tromino," "yellow clears score ×1.5") — a jam-out ends
+  the run and every relic with it. See **Relics** below.
 
-The menu also has **STATS** (lifetime numbers + a 17-achievement list) and
+The menu also has **STATS** (lifetime numbers + a 19-achievement list) and
 **LOOKS** (equip unlocked block skins and grid themes).
 
 Shared across modes: drag 1–3-tile blocks from the tray onto the grid; fill a
@@ -34,9 +39,40 @@ full row **or** column to clear it. Combo multiplier (×1…×9) builds on conse
 clearing placements. **PURE** bonus for a single-colour line, **PERFECT CLEAR**
 (+2500) for emptying the board in one move. Bar at 0 = game over.
 
+## Relics (RUN mode)
+
+The core loop (`makePiece`, scoring, health regen, combo reset) never branches
+on individual relics — it only ever asks "does anything active want to change
+this?" at four hook points, so adding relic #5 later means adding one entry to
+the `RELICS` table, not touching `place()` again:
+
+| Hook | Fires from | Used by |
+|---|---|---|
+| `pieceShape()` | `makePiece()` | TROMINO FOCUS — forces every draw to a 3-tile shape |
+| `scoreGain(gain, ctx)` | `place()`, after computing a clear's score | GOLD RUSH — ×1.5 if the clear touched yellow |
+| `flowGain(flow)` | `place()`, after the normal HEALTH/FLOW regen | SECOND WIND — +6 extra on every clear |
+| `comboReset()` | `place()`, the non-clearing branch | CHAIN KEEPER — returning `false` skips the reset |
+
+`relicHook(name)` collects that function from every relic in `runRelics` (plain
+IDs) and the caller runs them in order; with zero relics active — i.e. every
+mode except RUN — none of these sites do anything extra, so Relaxed/Timed/Daily
+are byte-for-byte the pre-RUN behavior. Stage advance (`checkRunAdvance`,
+called after a clearing placement resolves) reuses the pause flag (`paused`) to
+gate input while `#relicpick` is up, rather than a separate lock. The run
+summary reuses the normal GAME OVER overlay (`writeOverSub` appends the stage
++ relic count when `mode==='run'`); CONTINUE (`revive()`) never touches
+`runStage`/`runRelics`, so a rewarded-ad continue preserves the run. Rerolling
+the relic offer (`#relic-reroll`) is the other ad hook, gated the same way as
+CONTINUE/DOUBLE SCORE on `Portal.rewardsAvailable()`.
+
+Only 4 relics ship today (one per hook, one per board color) — enough to prove
+the system works end to end. Expanding the roster is the natural next pass,
+but wants some actual play data on whether the 4 are fun before multiplying
+the surface area.
+
 ## Progression
 
-- **17 achievements**, toast on unlock; 7 grant a skin or theme (5 skins, 4
+- **19 achievements**, toast on unlock; 7 grant a skin or theme (5 skins, 4
   themes). All earned through play.
 - **Daily streak** — the reason to reopen tomorrow.
 - Stats: games, blocks, lines, perfect clears, pure lines, best combo, per-mode
@@ -261,21 +297,23 @@ scripts now share the actual recording logic from `scripts/lib/showcase-recorder
 - the actual form fields on the developer portal — draft copy:
   - **Title:** Trice
   - **Short description:** Fit three-square blocks onto a 6&times;6 grid, clear
-    rows and columns, and chase the combo. Play Relaxed, race the clock in
-    Timed, or take on the daily challenge.
+    rows and columns, and chase the combo — then pick a relic and see how deep
+    a Run goes.
   - **Long description:** Trice is a blocky grid-puzzle game — drag
     three-square pieces onto a 6&times;6 board, fill a full row or column to
-    clear it, and keep the board from filling up. Three ways to play: Relaxed
+    clear it, and keep the board from filling up. Four ways to play: Relaxed
     (no clock, take your time), Timed (a FLOW bar drains while you think —
-    keep placing to stay alive), and Daily Challenge (the same blocks for
-    everyone, once a day — build a streak). Chain clears for combo
-    multipliers, clear a line in a single color for a PURE bonus, empty the
-    whole board for a PERFECT CLEAR. 17 achievements, 5 block skins, 4 grid
-    themes to unlock. No installs, no accounts — just one more round.
+    keep placing to stay alive), Daily Challenge (the same blocks for
+    everyone, once a day — build a streak), and Run — clear stages, pick a
+    permanent relic between each one, and see how deep you get before a jam
+    ends it. Chain clears for combo multipliers, clear a line in a single
+    color for a PURE bonus, empty the whole board for a PERFECT CLEAR. 19
+    achievements, 5 block skins, 4 grid themes to unlock. No installs, no
+    accounts — just one more round.
   - **Controls:** Drag a block from the tray onto the grid with your mouse or
     finger. Or tap a block to select it, then tap the grid to place it.
   - **Category:** Puzzle. **Tags:** block puzzle, grid, casual, relaxing,
-    brain, combo, daily challenge.
+    brain, combo, daily challenge, roguelike.
   - **Orientation:** Portrait (the board centers and letterboxes cleanly in a
     landscape iframe too — worth a quick look in their preview before
     finalizing).
