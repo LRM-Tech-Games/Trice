@@ -51,7 +51,7 @@ the `RELICS` table, not touching `place()` again:
 | `pieceShape()` | `makePiece()` | TROMINO FOCUS — forces every draw to a 3-tile shape |
 | `scoreGain(gain, ctx)` | `place()`, after computing a clear's score | GOLD RUSH — ×1.5 if the clear touched yellow |
 | `flowGain(flow)` | `place()`, after the normal HEALTH/FLOW regen | SECOND WIND — +6 extra on every clear |
-| `comboReset()` | `place()`, the non-clearing branch | CHAIN KEEPER — returning `false` skips the reset |
+| `comboReset()` | `place()`, the non-clearing branch, only when `combo > 0` | CHAIN KEEPER — returning `false` skips the reset |
 
 `relicHook(name)` collects that function from every relic in `runRelics` (plain
 IDs) and the caller runs them in order; with zero relics active — i.e. every
@@ -69,6 +69,20 @@ Only 4 relics ship today (one per hook, one per board color) — enough to prove
 the system works end to end. Expanding the roster is the natural next pass,
 but wants some actual play data on whether the 4 are fun before multiplying
 the surface area.
+
+**Playtesting note:** CHAIN KEEPER originally blocked the combo reset
+unconditionally — permanent, for the whole run. Playtesting found that
+overpowered (combo climbs to ×9 and just sits there once you have it, making
+every other relic a rounding error by comparison). Fixed by scoping it to a
+shield that recharges once per stage instead of per run: `runStageUsed`
+(relic id → already fired this stage) is cleared alongside the other run
+state in `newGame()` and again in `checkRunAdvance()` on every stage
+transition; the relic's hook checks and sets that flag itself. Deliberately
+*not* a wall-clock timer, even though "limit how long it lasts" was the
+original framing — RUN mode's whole identity is having no clock, and a
+seconds-based buff would need new infrastructure (a timestamp, a HUD
+countdown) for a worse fit than reusing the pacing unit the mode already
+runs on.
 
 ## Progression
 

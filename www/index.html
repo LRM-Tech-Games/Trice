@@ -586,8 +586,12 @@ window.Portal = window.Portal || {
       desc:'Clearing lines restores extra HEALTH.',
       hooks:{ flowGain:function(f){ return f + 6; } } },
     { id:'chainkeeper', name:'CHAIN KEEPER', color:'blue',
-      desc:'Your combo never resets — it only grows.',
-      hooks:{ comboReset:function(){ return false; } } }
+      desc:'Your combo survives one whiff per stage.',
+      hooks:{ comboReset:function(){
+        if (runStageUsed.chainkeeper) return true;   // already spent this stage — reset as normal
+        runStageUsed.chainkeeper = true;
+        return false;                                // shield used: block the reset
+      } } }
   ];
   function findRelic(id){
     for (var i=0;i<RELICS.length;i++) if (RELICS[i].id === id) return RELICS[i];
@@ -650,6 +654,7 @@ window.Portal = window.Portal || {
     runStage++;
     runStageStart = lines;
     runLinesNeed = Math.min(4 + runStage, 10);
+    runStageUsed = {};
     offerRelicPick();
     return true;
   }
@@ -820,6 +825,7 @@ window.Portal = window.Portal || {
   var hiCells = [], _ovT = 0, _ovLabel = '';
   var tutorial = false, tutStep = 0, tutLines = 0, tutMiss = 0;
   var runStage = 1, runStageStart = 0, runLinesNeed = 5, runRelics = [], runPickOffer = [];
+  var runStageUsed = {};   // relic id -> its once-per-stage effect already fired this stage
 
   function emptyBoard(){
     var b = [];
@@ -1361,7 +1367,7 @@ window.Portal = window.Portal || {
     flow = 100; started = false; pausedAccum = 0;
     lastTs = performance.now(); lastMoveTs = lastTs; startTs = lastTs;
     score = 0; lines = 0; combo = 0; maxCombo = 0;
-    runStage = 1; runStageStart = 0; runLinesNeed = 5; runRelics = []; runPickOffer = [];
+    runStage = 1; runStageStart = 0; runLinesNeed = 5; runRelics = []; runPickOffer = []; runStageUsed = {};
     $('#relicpick').classList.add('hidden');
     board = emptyBoard();
     tray = [makePiece(), makePiece(), makePiece(), makePiece()];
