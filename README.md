@@ -84,6 +84,16 @@ seconds-based buff would need new infrastructure (a timestamp, a HUD
 countdown) for a worse fit than reusing the pacing unit the mode already
 runs on.
 
+SECOND WIND had the same shape of problem, just from magnitude instead of
+duration: a normal single-line clear heals +1 HEALTH, and the relic added a
+flat +6 on top of that — a 7× multiplier on the single most common event in
+the game. Across a 5–10-line stage that's +30–60 HEALTH, against a worst-case
+jam costing ~50, so once picked, jamming out stopped being a real threat as
+long as you kept clearing anything — noticed because a test run survived to
+stage 10+ specifically because its healing was outpacing jam damage even
+against a deliberately bad bot. Cut to +2: still a meaningful cushion, not a
+button that turns off the run's failure condition.
+
 ## Progression
 
 - **19 achievements**, toast on unlock; 7 grant a skin or theme (5 skins, 4

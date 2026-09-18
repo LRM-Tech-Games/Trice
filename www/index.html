@@ -584,7 +584,7 @@ window.Portal = window.Portal || {
       hooks:{ scoreGain:function(gain, ctx){ return ctx.colors.yellow ? gain * 1.5 : gain; } } },
     { id:'secondwind', name:'SECOND WIND', color:'green',
       desc:'Clearing lines restores extra HEALTH.',
-      hooks:{ flowGain:function(f){ return f + 6; } } },
+      hooks:{ flowGain:function(f){ return f + 2; } } },
     { id:'chainkeeper', name:'CHAIN KEEPER', color:'blue',
       desc:'Your combo survives one whiff per stage.',
       hooks:{ comboReset:function(){
